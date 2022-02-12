@@ -1,9 +1,10 @@
 import { PropertyType } from '.prisma/client';
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { homeSelect, HomeService } from './home.service';
+import { HomeService, homeSelect } from './home.service';
 
-const mockHomes = [
+const mockGetHomes = [
   {
     id: 1,
     address: '2345 William Str',
@@ -15,7 +16,7 @@ const mockHomes = [
     numberOfBathrooms: 2.5,
     images: [
       {
-        url: 'img1',
+        url: 'src1',
       },
     ],
   },
@@ -33,7 +34,7 @@ describe('HomeService', () => {
           provide: PrismaService,
           useValue: {
             home: {
-              findMany: jest.fn().mockReturnValue(mockHomes),
+              findMany: jest.fn().mockReturnValue(mockGetHomes),
             },
           },
         },
@@ -54,16 +55,16 @@ describe('HomeService', () => {
       propertyType: PropertyType.RESIDENTIAL,
     };
 
-    it('should call prisma to get homes by filter', async () => {
-      const prismaFindManyHomes = jest.fn().mockReturnValue(mockHomes);
+    it('should call prisma home.findMany with correct params', async () => {
+      const mockPrismaFindManyHomes = jest.fn().mockReturnValue(mockGetHomes);
 
       jest
         .spyOn(prismaService.home, 'findMany')
-        .mockImplementation(prismaFindManyHomes);
+        .mockImplementation(mockPrismaFindManyHomes);
 
       await service.getHomes(filters);
 
-      expect(prismaFindManyHomes).toBeCalledWith({
+      expect(mockPrismaFindManyHomes).toBeCalledWith({
         select: {
           ...homeSelect,
           images: {
@@ -75,6 +76,18 @@ describe('HomeService', () => {
         },
         where: filters,
       });
+    });
+
+    it('', async () => {
+      const mockPrismaFindManyHomes = jest.fn().mockReturnValue([]);
+
+      jest
+        .spyOn(prismaService.home, 'findMany')
+        .mockImplementation(mockPrismaFindManyHomes);
+
+      await expect(service.getHomes(filters)).rejects.toThrowError(
+        NotFoundException,
+      );
     });
   });
 });
